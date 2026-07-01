@@ -11,7 +11,7 @@ import { useDebouncedCallback } from './hooks/useDebouncedCallback';
 import { applyFix, recomputeAndRenderIssues } from './lib/issueRenderer';
 import { exportAsDocx, exportAsTxt } from './lib/exportDocument';
 import { GRAMMAR_CHECK_DEBOUNCE_MS } from './lib/constants';
-import { describeAIError, isWebGPUSupported, type AIRunStatus } from './lib/aiEngine';
+import { describeAIError, isAIConfigured, type AIRunStatus } from './lib/aiEngine';
 import { runAISuggestionCheck, type AISuggestion } from './lib/aiSuggestions';
 import type { Issue } from './types';
 
@@ -76,11 +76,9 @@ function App() {
   };
 
   const handleRunAICheck = async () => {
-    setAiCheckStatus({ kind: 'busy', text: 'Starting…', progress: null });
+    setAiCheckStatus({ kind: 'busy', text: 'Thinking…' });
     try {
-      const suggestions = await runAISuggestionCheck(getPlainText(), (report) =>
-        setAiCheckStatus({ kind: 'busy', text: report.text, progress: report.progress }),
-      );
+      const suggestions = await runAISuggestionCheck(getPlainText());
       aiSuggestionsRef.current = suggestions;
       runGrammarCheck();
       setAiCheckStatus({ kind: 'idle' });
@@ -108,7 +106,7 @@ function App() {
           onDismiss={handleDismiss}
           onRunAICheck={handleRunAICheck}
           aiCheckStatus={aiCheckStatus}
-          aiCheckAvailable={isWebGPUSupported()}
+          aiCheckAvailable={isAIConfigured()}
         />
       </div>
       <StatusBar wordCount={wordCount} issueCount={issues.length} />

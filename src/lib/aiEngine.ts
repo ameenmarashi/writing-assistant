@@ -1,9 +1,11 @@
-import type { InitProgressReport, MLCEngine } from '@mlc-ai/web-llm';
+// AI runs through a small Cloudflare Worker proxy (see worker/README.md)
+// that calls OpenRouter's free DeepSeek endpoint. The proxy exists so the
+// OpenRouter API key never has to ship in this static site's client JS.
+const PROXY_URL = import.meta.env.VITE_AI_PROXY_URL as string | undefined;
 
-// Small instruction-tuned model chosen for a reasonable download size while
-// still following short rewrite/tone instructions well. Runs entirely
-// on-device via WebGPU — no API key, no server, no per-request cost.
-export const MODEL_ID = 'Llama-3.2-1B-Instruct-q4f16_1-MLC';
+export function isAIConfigured(): boolean {
+  return Boolean(PROXY_URL);
+}
 
 export type AIAction =
   | 'proofread'
@@ -126,65 +128,52 @@ const ACTION_TEMPERATURE: Partial<Record<AIAction, number>> = {
   keyPoints: 0.2,
 };
 
-export function isWebGPUSupported(): boolean {
-  return typeof navigator !== 'undefined' && 'gpu' in navigator;
-}
-
 export type AIRunStatus =
   | { kind: 'idle' }
-  | { kind: 'busy'; text: string; progress: number | null }
+  | { kind: 'busy'; text: string }
   | { kind: 'error'; message: string };
 
 /** Maps a thrown error to a short, user-facing message for AI run failures. */
 export function describeAIError(err: unknown): string {
   const raw = err instanceof Error ? err.message : '';
-  if (/fetch/i.test(raw)) {
-    return "Couldn't download the AI model — check your internet connection and try again.";
+  if (/not configured/i.test(raw)) return raw;
+  if (/fetch|network/i.test(raw)) {
+    return "Couldn't reach the AI service — check your internet connection and try again.";
   }
   return raw || 'AI action failed. Try again.';
 }
 
-let enginePromise: Promise<MLCEngine> | null = null;
-
-/** Lazily downloads/initializes the model on first use, then reuses the same engine instance. */
-function getEngine(onProgress?: (report: InitProgressReport) => void): Promise<MLCEngine> {
-  if (!enginePromise) {
-    enginePromise = import('@mlc-ai/web-llm')
-      .then(({ CreateMLCEngine }) =>
-        CreateMLCEngine(MODEL_ID, { initProgressCallback: onProgress }),
-      )
-      .catch((err) => {
-        enginePromise = null; // allow retry on next call
-        throw err;
-      });
-  }
-  return enginePromise;
-}
-
-export type AIProgressCallback = (report: InitProgressReport) => void;
-
-/** Shared low-level call: loads the engine (if needed) and runs one system+user prompt. */
+/** Shared low-level call: sends one system+user prompt through the proxy. */
 export async function runAIPrompt(
   systemPrompt: string,
   userText: string,
-  onProgress?: AIProgressCallback,
   temperature = 0.3,
 ): Promise<string> {
-  const engine = await getEngine(onProgress);
-  const completion = await engine.chat.completions.create({
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userText },
-    ],
-    temperature,
+  if (!PROXY_URL) {
+    throw new Error('AI features are not configured yet (missing VITE_AI_PROXY_URL).');
+  }
+  const response = await fetch(PROXY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userText },
+      ],
+      temperature,
+    }),
   });
-  return completion.choices[0]?.message?.content?.trim() ?? '';
+  if (!response.ok) {
+    throw new Error(`AI request failed (HTTP ${response.status})`);
+  }
+  const data = await response.json();
+  const content = data?.choices?.[0]?.message?.content;
+  if (typeof content !== 'string' || !content.trim()) {
+    throw new Error('AI response was empty or malformed.');
+  }
+  return content.trim();
 }
 
-export async function runAIAction(
-  action: AIAction,
-  text: string,
-  onProgress?: AIProgressCallback,
-): Promise<string> {
-  return runAIPrompt(ACTION_PROMPTS[action], text, onProgress, ACTION_TEMPERATURE[action] ?? 0.3);
+export async function runAIAction(action: AIAction, text: string): Promise<string> {
+  return runAIPrompt(ACTION_PROMPTS[action], text, ACTION_TEMPERATURE[action] ?? 0.3);
 }

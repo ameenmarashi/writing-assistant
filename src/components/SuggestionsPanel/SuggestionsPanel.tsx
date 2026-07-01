@@ -37,8 +37,8 @@ export function SuggestionsPanel({
         disabled={!aiCheckAvailable || busy}
         title={
           aiCheckAvailable
-            ? 'Analyze the whole document with the on-device AI model (free, runs in your browser)'
-            : 'Needs a WebGPU-capable browser (e.g. recent Chrome/Edge/Safari)'
+            ? 'Analyze the whole document with AI'
+            : 'AI features are not configured yet'
         }
         onClick={onRunAICheck}
       >
@@ -47,14 +47,6 @@ export function SuggestionsPanel({
       {busy && (
         <div className={styles.aiCheckStatus}>
           <div>{aiCheckStatus.text}</div>
-          {aiCheckStatus.progress !== null && (
-            <div className={styles.progressTrack}>
-              <div
-                className={styles.progressFill}
-                style={{ width: `${Math.round(aiCheckStatus.progress * 100)}%` }}
-              />
-            </div>
-          )}
         </div>
       )}
       {aiCheckStatus.kind === 'error' && (

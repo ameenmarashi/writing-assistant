@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import type { InitProgressReport } from '@mlc-ai/web-llm';
 import {
   AI_ACTION_GROUPS,
   AI_ACTION_LABELS,
   describeAIError,
-  isWebGPUSupported,
+  isAIConfigured,
   runAIAction,
   type AIAction,
   type AIRunStatus,
@@ -20,7 +19,7 @@ export function AIActionsMenu({ editableRef }: AIActionsMenuProps) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<AIRunStatus>({ kind: 'idle' });
   const containerRef = useRef<HTMLDivElement>(null);
-  const webGPUSupported = isWebGPUSupported();
+  const configured = isAIConfigured();
 
   useEffect(() => {
     if (!open) return;
@@ -49,12 +48,10 @@ export function AIActionsMenu({ editableRef }: AIActionsMenuProps) {
     const sourceText = range.toString();
     if (!sourceText.trim()) return;
 
-    setStatus({ kind: 'busy', text: 'Starting…', progress: null });
+    setStatus({ kind: 'busy', text: 'Thinking…' });
 
     try {
-      const resultText = await runAIAction(action, sourceText, (report: InitProgressReport) => {
-        setStatus({ kind: 'busy', text: report.text, progress: report.progress });
-      });
+      const resultText = await runAIAction(action, sourceText);
       if (!resultText) {
         setStatus({ kind: 'error', message: 'The model returned an empty result. Try again.' });
         return;
@@ -80,12 +77,8 @@ export function AIActionsMenu({ editableRef }: AIActionsMenuProps) {
       <button
         type="button"
         className={styles.toggle}
-        disabled={!webGPUSupported || busy}
-        title={
-          webGPUSupported
-            ? 'AI writing actions (runs on-device, first use downloads a model)'
-            : 'AI actions need a WebGPU-capable browser (e.g. recent Chrome/Edge/Safari)'
-        }
+        disabled={!configured || busy}
+        title={configured ? 'AI writing actions' : 'AI features are not configured (missing VITE_AI_PROXY_URL)'}
         onMouseDown={(e) => {
           e.preventDefault();
           setStatus({ kind: 'idle' });
@@ -123,11 +116,6 @@ export function AIActionsMenu({ editableRef }: AIActionsMenuProps) {
       {busy && (
         <div className={styles.status}>
           <div>{status.text}</div>
-          {status.progress !== null && (
-            <div className={styles.progressTrack}>
-              <div className={styles.progressFill} style={{ width: `${Math.round(status.progress * 100)}%` }} />
-            </div>
-          )}
         </div>
       )}
 

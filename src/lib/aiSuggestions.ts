@@ -1,4 +1,4 @@
-import { runAIPrompt, type AIProgressCallback } from './aiEngine';
+import { runAIPrompt } from './aiEngine';
 import type { IssueCategory } from '../types';
 
 export interface AISuggestion {
@@ -41,14 +41,11 @@ function extractJsonArray(raw: string): unknown {
  * so the caller can safely locate it in the DOM later; anything the model
  * hallucinated (a quote that doesn't actually appear in the text) is dropped.
  */
-export async function runAISuggestionCheck(
-  text: string,
-  onProgress?: AIProgressCallback,
-): Promise<AISuggestion[]> {
+export async function runAISuggestionCheck(text: string): Promise<AISuggestion[]> {
   const input = text.slice(0, MAX_INPUT_CHARS);
   if (!input.trim()) return [];
 
-  const raw = await runAIPrompt(SYSTEM_PROMPT, input, onProgress);
+  const raw = await runAIPrompt(SYSTEM_PROMPT, input);
   const parsed = extractJsonArray(raw);
   if (!Array.isArray(parsed)) return [];
 
