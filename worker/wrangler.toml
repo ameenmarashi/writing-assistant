@@ -1,0 +1,10 @@
+name = "writing-assistant-ai-proxy"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# Set after deploying, so the Worker only echoes CORS headers for your site:
+#   wrangler secret put ALLOWED_ORIGIN
+# (optional — defaults to "*" if unset, which works but is more permissive)
+
+# Required — your OpenRouter API key, kept server-side and never sent to the browser:
+#   wrangler secret put OPENROUTER_API_KEY
