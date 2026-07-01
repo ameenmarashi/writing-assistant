@@ -1,0 +1,271 @@
+:root {
+  --ui-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif;
+  --doc-font: "New York", Georgia, "Times New Roman", serif;
+  --toolbar-bg: #f6f5f3;
+  --toolbar-border: #ddd9d3;
+  --canvas-bg: #e6e4e0;
+  --page-bg: #ffffff;
+  --ink: #1c1c1e;
+  --accent: #d97a3a;
+  --muted: #8a8782;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--canvas-bg);
+  font-family: var(--ui-font);
+  color: var(--ink);
+}
+
+/* ---------- Toolbar ---------- */
+
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 8px 20px;
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--toolbar-border);
+}
+
+.toolbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.brand-mark {
+  font-size: 18px;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 10px;
+  border-right: 1px solid var(--toolbar-border);
+}
+
+.toolbar-group:last-of-type {
+  border-right: none;
+}
+
+.toolbar-group-end {
+  margin-left: auto;
+  padding-right: 0;
+  border-right: none;
+}
+
+.tb-btn {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tb-btn:hover {
+  background: #ece9e4;
+}
+
+.tb-btn.is-active {
+  background: #e3d9cd;
+  border-color: var(--accent);
+}
+
+.tb-btn-text {
+  font-family: var(--ui-font);
+  font-size: 13px;
+  padding: 0 10px;
+}
+
+.toolbar-select {
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid var(--toolbar-border);
+  background: #fff;
+  font-family: var(--ui-font);
+  font-size: 13px;
+  padding: 0 6px;
+}
+
+/* ---------- AI banner ---------- */
+
+.ai-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: #fdf1e6;
+  border-bottom: 1px solid #f0d9bb;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.ai-banner-fallback {
+  background: #eef2f7;
+  border-bottom: 1px solid #d9e2ee;
+}
+
+.ai-banner[hidden] {
+  display: none;
+}
+
+.ai-banner-icon {
+  font-size: 16px;
+  flex: 0 0 auto;
+}
+
+.ai-banner-text {
+  flex: 1 1 auto;
+}
+
+.ai-banner-dismiss {
+  flex: 0 0 auto;
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 2px 6px;
+}
+
+.ai-banner-dismiss:hover {
+  color: var(--ink);
+}
+
+/* ---------- Canvas / page ---------- */
+
+.canvas {
+  min-height: calc(100vh - 140px);
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px 80px;
+}
+
+.page-wrapper {
+  width: 100%;
+  max-width: 816px;
+}
+
+.doc-title {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-family: var(--doc-font);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 14px;
+  padding: 4px 2px;
+}
+
+.doc-title:focus {
+  outline: none;
+}
+
+.doc-title::placeholder {
+  color: #b7b3ac;
+}
+
+.page {
+  background: var(--page-bg);
+  min-height: 1056px; /* ~11in page at 96dpi */
+  padding: 96px 96px; /* ~1in margins */
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08), 0 12px 28px rgba(0,0,0,0.10);
+  border-radius: 2px;
+  font-family: var(--doc-font);
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--ink);
+}
+
+.page:focus {
+  outline: none;
+}
+
+.page p {
+  margin: 0 0 1em;
+}
+
+.page h1 {
+  font-size: 32px;
+  margin: 0.6em 0 0.4em;
+}
+
+.page h2 {
+  font-size: 26px;
+  margin: 0.6em 0 0.4em;
+}
+
+.page h3 {
+  font-size: 21px;
+  margin: 0.6em 0 0.4em;
+}
+
+.page blockquote {
+  margin: 0 0 1em;
+  padding: 2px 0 2px 18px;
+  border-left: 3px solid var(--accent);
+  color: #4a4a4a;
+  font-style: italic;
+}
+
+.page ul, .page ol {
+  margin: 0 0 1em;
+  padding-left: 1.4em;
+}
+
+@media (max-width: 700px) {
+  .page {
+    padding: 48px 28px;
+  }
+  .doc-title {
+    font-size: 22px;
+  }
+}
+
+/* ---------- Status bar ---------- */
+
+.statusbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 20px;
+  background: var(--toolbar-bg);
+  border-top: 1px solid var(--toolbar-border);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.statusbar-sep {
+  color: #cfccc6;
+}
+
+.save-status.saving {
+  color: var(--accent);
+}

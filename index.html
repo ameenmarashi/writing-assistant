@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InkWell — Writing Assistant for Safari</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="toolbar" role="toolbar" aria-label="Formatting toolbar">
+  <div class="toolbar-brand">
+    <span class="brand-mark">✒️</span>
+    <span class="brand-name">InkWell</span>
+  </div>
+
+  <div class="toolbar-group">
+    <select id="blockFormat" class="toolbar-select" aria-label="Paragraph style">
+      <option value="p">Paragraph</option>
+      <option value="h1">Heading 1</option>
+      <option value="h2">Heading 2</option>
+      <option value="h3">Heading 3</option>
+      <option value="blockquote">Quote</option>
+    </select>
+  </div>
+
+  <div class="toolbar-group">
+    <button type="button" data-command="bold" class="tb-btn" title="Bold (Ctrl/Cmd+B)"><b>B</b></button>
+    <button type="button" data-command="italic" class="tb-btn" title="Italic (Ctrl/Cmd+I)"><i>I</i></button>
+    <button type="button" data-command="underline" class="tb-btn" title="Underline (Ctrl/Cmd+U)"><u>U</u></button>
+    <button type="button" data-command="strikeThrough" class="tb-btn" title="Strikethrough"><s>S</s></button>
+  </div>
+
+  <div class="toolbar-group">
+    <button type="button" data-command="justifyLeft" class="tb-btn" title="Align left">⯇</button>
+    <button type="button" data-command="justifyCenter" class="tb-btn" title="Align center">≡</button>
+    <button type="button" data-command="justifyRight" class="tb-btn" title="Align right">⯈</button>
+  </div>
+
+  <div class="toolbar-group">
+    <button type="button" data-command="insertUnorderedList" class="tb-btn" title="Bulleted list">• ≡</button>
+    <button type="button" data-command="insertOrderedList" class="tb-btn" title="Numbered list">1. ≡</button>
+  </div>
+
+  <div class="toolbar-group toolbar-group-end">
+    <button type="button" id="newDocBtn" class="tb-btn tb-btn-text" title="New document">New</button>
+    <button type="button" id="exportHtmlBtn" class="tb-btn tb-btn-text" title="Export as HTML">Export HTML</button>
+    <button type="button" id="exportTxtBtn" class="tb-btn tb-btn-text" title="Export as plain text">Export Text</button>
+  </div>
+</header>
+
+<div id="aiBanner" class="ai-banner" hidden>
+  <span class="ai-banner-icon">✨</span>
+  <span class="ai-banner-text">
+    <strong>Apple Intelligence is ready.</strong>
+    Select any text below, then tap the <strong>✨ Writing Tools</strong> icon that appears
+    (or right‑click → <em>Writing Tools</em>) to Proofread, Rewrite, Summarize, or change tone —
+    powered natively by Safari.
+  </span>
+  <button type="button" id="dismissBanner" class="ai-banner-dismiss" aria-label="Dismiss">×</button>
+</div>
+
+<div id="aiFallbackBanner" class="ai-banner ai-banner-fallback" hidden>
+  <span class="ai-banner-icon">ℹ️</span>
+  <span class="ai-banner-text">
+    Writing Tools suggestions are powered by <strong>Apple Intelligence in Safari</strong>.
+    Open this page in Safari on a Mac (macOS Sequoia or later) or an iPhone/iPad with
+    Apple Intelligence enabled to select text and get native Proofread, Rewrite, and
+    Summarize suggestions.
+  </span>
+  <button type="button" id="dismissFallback" class="ai-banner-dismiss" aria-label="Dismiss">×</button>
+</div>
+
+<main class="canvas">
+  <div class="page-wrapper">
+    <input id="docTitle" class="doc-title" type="text" placeholder="Untitled Document" aria-label="Document title">
+    <div id="editor" class="page" contenteditable="true" spellcheck="true" aria-label="Document body">
+      <p>Start writing here. Select a sentence and use Safari's Writing Tools to proofread or rewrite it with Apple Intelligence.</p>
+    </div>
+  </div>
+</main>
+
+<footer class="statusbar">
+  <span id="wordCount">0 words</span>
+  <span class="statusbar-sep">·</span>
+  <span id="charCount">0 characters</span>
+  <span class="statusbar-sep">·</span>
+  <span id="readTime">0 min read</span>
+  <span class="statusbar-sep">·</span>
+  <span id="saveStatus" class="save-status">Saved</span>
+</footer>
+
+<script src="js/app.js"></script>
+</body>
+</html>
