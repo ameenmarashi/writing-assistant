@@ -1,6 +1,34 @@
 import { checkText } from './grammarRules';
 import { getPlainTextAndMap, nodeOffsetToPlainTextOffset, offsetsToRange } from './domTextMapping';
+import type { AISuggestion } from './aiSuggestions';
 import type { Issue } from '../types';
+
+/**
+ * AI suggestions carry a verbatim quote (`original`) rather than a fixed
+ * offset, since the document may have changed since the AI request was
+ * made. Offsets are re-resolved against the current text on every render,
+ * so a suggestion whose quote no longer appears (edited away) is dropped
+ * rather than rendered at a stale/wrong position.
+ */
+function aiSuggestionsToIssues(text: string, suggestions: AISuggestion[]): Issue[] {
+  const issues: Issue[] = [];
+  for (const s of suggestions) {
+    const start = text.indexOf(s.original);
+    if (start === -1) continue;
+    const end = start + s.original.length;
+    issues.push({
+      id: `ai-${start}-${end}`,
+      ruleId: 'ai',
+      category: s.category,
+      message: s.explanation,
+      start,
+      end,
+      matchedText: s.original,
+      suggestion: s.suggestion,
+    });
+  }
+  return issues;
+}
 
 const ISSUE_ATTR = 'data-issue-id';
 
@@ -48,6 +76,7 @@ function restoreCaretOffset(root: HTMLElement, offset: number): void {
 export function recomputeAndRenderIssues(
   root: HTMLElement,
   dismissed: Set<string>,
+  aiSuggestions: AISuggestion[] = [],
 ): Issue[] {
   const hadFocus = root.contains(document.activeElement) || document.activeElement === root;
   const caretOffset = hadFocus ? captureCaretOffset(root) : null;
@@ -55,7 +84,9 @@ export function recomputeAndRenderIssues(
   unwrapAllMarks(root);
 
   const initialMap = getPlainTextAndMap(root);
-  const allIssues = checkText(initialMap.text);
+  const ruleIssues = checkText(initialMap.text);
+  const aiIssues = aiSuggestionsToIssues(initialMap.text, aiSuggestions);
+  const allIssues = [...ruleIssues, ...aiIssues].sort((a, b) => a.start - b.start);
   const visibleIssues = allIssues.filter(
     (issue) => !dismissed.has(`${issue.ruleId}:${issue.matchedText}`),
   );
@@ -72,7 +103,7 @@ export function recomputeAndRenderIssues(
     if (!range) continue;
     try {
       const mark = document.createElement('span');
-      mark.className = `issue issue-${issue.category}`;
+      mark.className = `issue issue-${issue.category}${issue.ruleId === 'ai' ? ' issue-ai' : ''}`;
       mark.setAttribute(ISSUE_ATTR, issue.id);
       mark.title = issue.message;
       range.surroundContents(mark);

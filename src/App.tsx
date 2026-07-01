@@ -11,6 +11,8 @@ import { useDebouncedCallback } from './hooks/useDebouncedCallback';
 import { applyFix, recomputeAndRenderIssues } from './lib/issueRenderer';
 import { exportAsDocx, exportAsTxt } from './lib/exportDocument';
 import { GRAMMAR_CHECK_DEBOUNCE_MS } from './lib/constants';
+import { describeAIError, isWebGPUSupported, type AIRunStatus } from './lib/aiEngine';
+import { runAISuggestionCheck, type AISuggestion } from './lib/aiSuggestions';
 import type { Issue } from './types';
 
 function fingerprint(issue: Issue): string {
@@ -20,13 +22,15 @@ function fingerprint(issue: Issue): string {
 function App() {
   const { initialHTML, save } = useLocalStorageDocument();
   const [issues, setIssues] = useState<Issue[]>([]);
+  const [aiCheckStatus, setAiCheckStatus] = useState<AIRunStatus>({ kind: 'idle' });
   const dismissedRef = useRef<Set<string>>(new Set());
+  const aiSuggestionsRef = useRef<AISuggestion[]>([]);
   const ref = useRef<HTMLDivElement>(null);
 
   const runGrammarCheck = useCallback(() => {
     const el = ref.current;
     if (!el) return;
-    const visible = recomputeAndRenderIssues(el, dismissedRef.current);
+    const visible = recomputeAndRenderIssues(el, dismissedRef.current, aiSuggestionsRef.current);
     setIssues(visible);
   }, []);
 
@@ -71,6 +75,20 @@ function App() {
     runGrammarCheck();
   };
 
+  const handleRunAICheck = async () => {
+    setAiCheckStatus({ kind: 'busy', text: 'Starting…', progress: null });
+    try {
+      const suggestions = await runAISuggestionCheck(getPlainText(), (report) =>
+        setAiCheckStatus({ kind: 'busy', text: report.text, progress: report.progress }),
+      );
+      aiSuggestionsRef.current = suggestions;
+      runGrammarCheck();
+      setAiCheckStatus({ kind: 'idle' });
+    } catch (err) {
+      setAiCheckStatus({ kind: 'error', message: describeAIError(err) });
+    }
+  };
+
   return (
     <div className={styles.app}>
       <WritingToolsHint />
@@ -88,6 +106,9 @@ function App() {
           onJump={handleJump}
           onApply={handleApply}
           onDismiss={handleDismiss}
+          onRunAICheck={handleRunAICheck}
+          aiCheckStatus={aiCheckStatus}
+          aiCheckAvailable={isWebGPUSupported()}
         />
       </div>
       <StatusBar wordCount={wordCount} issueCount={issues.length} />

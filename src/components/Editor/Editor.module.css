@@ -63,6 +63,10 @@
   text-decoration-color: #00897b;
 }
 
+.page :global(.issue-ai) {
+  text-decoration-style: dotted;
+}
+
 .page :global(.issue-flash) {
   background: rgba(255, 235, 59, 0.45);
 }

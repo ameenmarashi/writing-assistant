@@ -53,6 +53,20 @@ export function isWebGPUSupported(): boolean {
   return typeof navigator !== 'undefined' && 'gpu' in navigator;
 }
 
+export type AIRunStatus =
+  | { kind: 'idle' }
+  | { kind: 'busy'; text: string; progress: number | null }
+  | { kind: 'error'; message: string };
+
+/** Maps a thrown error to a short, user-facing message for AI run failures. */
+export function describeAIError(err: unknown): string {
+  const raw = err instanceof Error ? err.message : '';
+  if (/fetch/i.test(raw)) {
+    return "Couldn't download the AI model — check your internet connection and try again.";
+  }
+  return raw || 'AI action failed. Try again.';
+}
+
 let enginePromise: Promise<MLCEngine> | null = null;
 
 /** Lazily downloads/initializes the model on first use, then reuses the same engine instance. */
@@ -70,18 +84,30 @@ function getEngine(onProgress?: (report: InitProgressReport) => void): Promise<M
   return enginePromise;
 }
 
-export async function runAIAction(
-  action: AIAction,
-  text: string,
-  onProgress?: (report: InitProgressReport) => void,
+export type AIProgressCallback = (report: InitProgressReport) => void;
+
+/** Shared low-level call: loads the engine (if needed) and runs one system+user prompt. */
+export async function runAIPrompt(
+  systemPrompt: string,
+  userText: string,
+  onProgress?: AIProgressCallback,
+  temperature = 0.3,
 ): Promise<string> {
   const engine = await getEngine(onProgress);
   const completion = await engine.chat.completions.create({
     messages: [
-      { role: 'system', content: ACTION_PROMPTS[action] },
-      { role: 'user', content: text },
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userText },
     ],
-    temperature: 0.3,
+    temperature,
   });
   return completion.choices[0]?.message?.content?.trim() ?? '';
+}
+
+export async function runAIAction(
+  action: AIAction,
+  text: string,
+  onProgress?: AIProgressCallback,
+): Promise<string> {
+  return runAIPrompt(ACTION_PROMPTS[action], text, onProgress);
 }

@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import type { InitProgressReport } from '@mlc-ai/web-llm';
-import { AI_ACTION_LABELS, isWebGPUSupported, runAIAction, type AIAction } from '../../lib/aiEngine';
+import {
+  AI_ACTION_LABELS,
+  describeAIError,
+  isWebGPUSupported,
+  runAIAction,
+  type AIAction,
+  type AIRunStatus,
+} from '../../lib/aiEngine';
 import { insertAIResult } from '../../lib/aiResultInsert';
 import styles from './AIActionsMenu.module.css';
 
@@ -14,15 +21,13 @@ const ACTIONS: AIAction[] = [
   'list',
 ];
 
-type Status = { kind: 'idle' } | { kind: 'busy'; text: string; progress: number | null } | { kind: 'error'; message: string };
-
 interface AIActionsMenuProps {
   editableRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export function AIActionsMenu({ editableRef }: AIActionsMenuProps) {
   const [open, setOpen] = useState(false);
-  const [status, setStatus] = useState<Status>({ kind: 'idle' });
+  const [status, setStatus] = useState<AIRunStatus>({ kind: 'idle' });
   const containerRef = useRef<HTMLDivElement>(null);
   const webGPUSupported = isWebGPUSupported();
 
@@ -73,11 +78,7 @@ export function AIActionsMenu({ editableRef }: AIActionsMenuProps) {
       editor.focus();
       setStatus({ kind: 'idle' });
     } catch (err) {
-      const raw = err instanceof Error ? err.message : '';
-      const message = /fetch/i.test(raw)
-        ? "Couldn't download the AI model — check your internet connection and try again."
-        : raw || 'AI action failed. Try again.';
-      setStatus({ kind: 'error', message });
+      setStatus({ kind: 'error', message: describeAIError(err) });
     }
   };
 
