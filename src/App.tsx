@@ -75,6 +75,7 @@ function App() {
     <div className={styles.app}>
       <WritingToolsHint />
       <Toolbar
+        editableRef={ref}
         onExportTxt={() => exportAsTxt(getPlainText())}
         onExportDocx={() => exportAsDocx(getHTML())}
       />

@@ -1,6 +1,8 @@
+import { AIActionsMenu } from '../AIActionsMenu/AIActionsMenu';
 import styles from './Toolbar.module.css';
 
 interface ToolbarProps {
+  editableRef: React.RefObject<HTMLDivElement | null>;
   onExportTxt: () => void;
   onExportDocx: () => void;
 }
@@ -37,7 +39,7 @@ function ToolbarButton({
   );
 }
 
-export function Toolbar({ onExportTxt, onExportDocx }: ToolbarProps) {
+export function Toolbar({ editableRef, onExportTxt, onExportDocx }: ToolbarProps) {
   return (
     <div className={styles.toolbar}>
       <ToolbarButton label="B" command="bold" title="Bold" />
@@ -55,6 +57,8 @@ export function Toolbar({ onExportTxt, onExportDocx }: ToolbarProps) {
       <ToolbarButton label="⯇" command="justifyLeft" title="Align left" />
       <ToolbarButton label="☰" command="justifyCenter" title="Align center" />
       <ToolbarButton label="⯈" command="justifyRight" title="Align right" />
+      <div className={styles.divider} />
+      <AIActionsMenu editableRef={editableRef} />
       <div className={styles.spacer} />
       <button type="button" className={styles.exportButton} onClick={onExportTxt}>
         Download .txt
