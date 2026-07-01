@@ -4,7 +4,10 @@ The web app is a static site with no server, so it can't safely hold an
 OpenRouter API key — anything shipped to the browser is visible to anyone
 who opens dev tools. This tiny Worker holds the key server-side instead: the
 app calls the Worker, and the Worker calls OpenRouter's free DeepSeek
-endpoint (`deepseek/deepseek-chat-v3.1:free`) on its behalf.
+endpoint (currently `openai/gpt-oss-20b:free` — see the `MODEL` constant in
+`src/index.js`; OpenRouter's free-tier lineup changes over time, so check
+https://openrouter.ai/models?max_price=0 if this one ever stops working)
+on its behalf.
 
 ## One-time setup
 

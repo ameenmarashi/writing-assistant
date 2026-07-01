@@ -4,13 +4,13 @@
  * Purpose: the web app is a static site with no backend, so it cannot hold
  * an OpenRouter API key without exposing it to every visitor. This Worker
  * holds the key as a server-side secret and forwards chat-completion
- * requests to OpenRouter's free DeepSeek endpoint on the app's behalf.
+ * requests to OpenRouter's free model endpoint on the app's behalf.
  *
  * Deployment: see worker/README.md.
  */
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const MODEL = 'deepseek/deepseek-chat-v3.1:free';
+const MODEL = 'openai/gpt-oss-20b:free';
 
 function corsHeaders(env) {
   return {
