@@ -19,7 +19,9 @@ export type AIAction =
   | 'concise'
   | 'informative'
   | 'summarize'
-  | 'list';
+  | 'keyPoints'
+  | 'list'
+  | 'table';
 
 export interface AIActionGroup {
   label: string;
@@ -34,7 +36,7 @@ export const AI_ACTION_GROUPS: AIActionGroup[] = [
     actions: ['professional', 'friendly', 'confident', 'diplomatic', 'direct', 'assertive', 'empathetic'],
   },
   { label: 'Adjust length', actions: ['concise', 'informative'] },
-  { label: 'Reformat', actions: ['summarize', 'list'] },
+  { label: 'Reformat', actions: ['summarize', 'keyPoints', 'list', 'table'] },
 ];
 
 export const AI_ACTION_LABELS: Record<AIAction, string> = {
@@ -51,7 +53,9 @@ export const AI_ACTION_LABELS: Record<AIAction, string> = {
   concise: 'Shorten',
   informative: 'Lengthen / add detail',
   summarize: 'Summarize',
+  keyPoints: 'Key points',
   list: 'Turn into a list',
+  table: 'Turn into a table',
 };
 
 const ACTION_PROMPTS: Record<AIAction, string> = {
@@ -99,9 +103,27 @@ const ACTION_PROMPTS: Record<AIAction, string> = {
   summarize:
     'Summarize the following text in a short paragraph, capturing only the most important points. ' +
     'Return only the summary, with no explanation, preamble, or quotation marks.',
+  keyPoints:
+    'Extract the key points from the following text as a concise bulleted list of its most ' +
+    'important ideas. Return only the list items, one per line, each starting with "- ", with no ' +
+    'explanation, preamble, or other text.',
   list:
-    'Convert the following text into a list of its key points. Return only the list items, one ' +
-    'per line, each starting with "- ", with no explanation, preamble, or other text.',
+    'Reformat the following text into a bulleted list, preserving its items and details. Return ' +
+    'only the list items, one per line, each starting with "- ", with no explanation, preamble, ' +
+    'or other text.',
+  table:
+    'Convert the following text into a table that organizes its information into rows and ' +
+    'columns. Respond with ONLY a JSON object (no markdown code fences, no explanation text ' +
+    'before or after) in exactly this shape: {"headers": ["Column 1", "Column 2"], "rows": ' +
+    '[["value", "value"], ["value", "value"]]}. Use 2-4 columns and as many rows as needed to ' +
+    'capture the content.',
+};
+
+/** Lower temperature for actions that must produce a strict, parseable structure. */
+const ACTION_TEMPERATURE: Partial<Record<AIAction, number>> = {
+  table: 0.1,
+  list: 0.2,
+  keyPoints: 0.2,
 };
 
 export function isWebGPUSupported(): boolean {
@@ -164,5 +186,5 @@ export async function runAIAction(
   text: string,
   onProgress?: AIProgressCallback,
 ): Promise<string> {
-  return runAIPrompt(ACTION_PROMPTS[action], text, onProgress);
+  return runAIPrompt(ACTION_PROMPTS[action], text, onProgress, ACTION_TEMPERATURE[action] ?? 0.3);
 }

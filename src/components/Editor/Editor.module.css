@@ -43,6 +43,26 @@
   padding-left: 1.5em;
 }
 
+.page :global(table) {
+  border-collapse: collapse;
+  margin: 0 0 1em;
+  width: 100%;
+  font-size: 0.95em;
+}
+
+.page :global(th),
+.page :global(td) {
+  border: 1px solid #ccc;
+  padding: 6px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.page :global(th) {
+  background: #f5f5f5;
+  font-weight: 700;
+}
+
 .page :global(.issue) {
   cursor: pointer;
   text-decoration-line: underline;
