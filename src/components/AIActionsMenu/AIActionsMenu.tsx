@@ -19,6 +19,7 @@ export function AIActionsMenu({ editableRef }: AIActionsMenuProps) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<AIRunStatus>({ kind: 'idle' });
   const containerRef = useRef<HTMLDivElement>(null);
+  const lastSelectionRef = useRef<Range | null>(null);
   const configured = isAIConfigured();
 
   useEffect(() => {
@@ -32,6 +33,23 @@ export function AIActionsMenu({ editableRef }: AIActionsMenuProps) {
     return () => window.removeEventListener('mousedown', onOutsideMouseDown);
   }, [open]);
 
+  useEffect(() => {
+    // Safari can clear the live Selection when focus moves to a toolbar
+    // button, even with preventDefault on mousedown (unlike Chrome, where
+    // that alone keeps the selection intact). Tracking the last non-empty
+    // selection made inside the editor gives runAction something reliable
+    // to fall back on regardless of browser quirks.
+    const onSelectionChange = () => {
+      const editor = editableRef.current;
+      const sel = window.getSelection();
+      if (!editor || !sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+      if (!editor.contains(sel.anchorNode)) return;
+      lastSelectionRef.current = sel.getRangeAt(0).cloneRange();
+    };
+    document.addEventListener('selectionchange', onSelectionChange);
+    return () => document.removeEventListener('selectionchange', onSelectionChange);
+  }, [editableRef]);
+
   const runAction = async (action: AIAction) => {
     const editor = editableRef.current;
     if (!editor) return;
@@ -40,11 +58,14 @@ export function AIActionsMenu({ editableRef }: AIActionsMenuProps) {
     let range: Range;
     if (selection && !selection.isCollapsed && editor.contains(selection.anchorNode)) {
       range = selection.getRangeAt(0).cloneRange();
+    } else if (lastSelectionRef.current && editor.contains(lastSelectionRef.current.startContainer)) {
+      range = lastSelectionRef.current.cloneRange();
     } else {
       // No selection: act on the whole document.
       range = document.createRange();
       range.selectNodeContents(editor);
     }
+    lastSelectionRef.current = null;
     const sourceText = range.toString();
     if (!sourceText.trim()) return;
 

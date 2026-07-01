@@ -143,6 +143,8 @@ export function describeAIError(err: unknown): string {
   return raw || 'AI action failed. Try again.';
 }
 
+const REQUEST_TIMEOUT_MS = 45000;
+
 /** Shared low-level call: sends one system+user prompt through the proxy. */
 export async function runAIPrompt(
   systemPrompt: string,
@@ -152,17 +154,33 @@ export async function runAIPrompt(
   if (!PROXY_URL) {
     throw new Error('AI features are not configured yet (missing VITE_AI_PROXY_URL).');
   }
-  const response = await fetch(PROXY_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userText },
-      ],
-      temperature,
-    }),
-  });
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userText },
+        ],
+        temperature,
+      }),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error('The AI request timed out — the free model may be overloaded right now. Try again.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
   if (!response.ok) {
     throw new Error(`AI request failed (HTTP ${response.status})`);
   }
