@@ -1,4 +1,6 @@
 import type { AIAction } from './aiEngine';
+import { buildTableElement } from './tableInsert';
+import { findBlockAncestor } from './toolbarCommands';
 
 function buildListFragment(text: string): DocumentFragment {
   const items = text
@@ -36,32 +38,8 @@ function buildTableFragment(raw: string): DocumentFragment {
     throw new Error('Table response had no headers or rows');
   }
 
-  const table = document.createElement('table');
-  if (headerCells.length > 0) {
-    const thead = document.createElement('thead');
-    const headerRow = document.createElement('tr');
-    for (const cell of headerCells) {
-      const th = document.createElement('th');
-      th.textContent = cell;
-      headerRow.appendChild(th);
-    }
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-  }
-  const tbody = document.createElement('tbody');
-  for (const row of bodyRows) {
-    const tr = document.createElement('tr');
-    for (const cell of row) {
-      const td = document.createElement('td');
-      td.textContent = cell;
-      tr.appendChild(td);
-    }
-    tbody.appendChild(tr);
-  }
-  table.appendChild(tbody);
-
   const frag = document.createDocumentFragment();
-  frag.appendChild(table);
+  frag.appendChild(buildTableElement(headerCells, bodyRows));
   return frag;
 }
 
@@ -89,26 +67,36 @@ function buildTextFragment(text: string): DocumentFragment {
  * consistent with the rest of the editor never showing literal syntax.
  * Returns a collapsed Range at the end of the inserted content, for caret placement.
  */
-function buildFragmentForAction(action: AIAction, resultText: string): DocumentFragment {
+function buildFragmentForAction(action: AIAction, resultText: string): { fragment: DocumentFragment; isBlock: boolean } {
   if (action === 'table') {
     try {
-      return buildTableFragment(resultText);
+      return { fragment: buildTableFragment(resultText), isBlock: true };
     } catch {
       // Model didn't return valid/parseable table JSON — fall back rather than crash.
-      return buildTextFragment(resultText);
+      return { fragment: buildTextFragment(resultText), isBlock: false };
     }
   }
   if (action === 'list' || action === 'keyPoints') {
-    return buildListFragment(resultText);
+    return { fragment: buildListFragment(resultText), isBlock: false };
   }
-  return buildTextFragment(resultText);
+  return { fragment: buildTextFragment(resultText), isBlock: false };
 }
 
-export function insertAIResult(range: Range, action: AIAction, resultText: string): Range {
-  range.deleteContents();
-  const fragment = buildFragmentForAction(action, resultText);
+export function insertAIResult(range: Range, root: HTMLElement, action: AIAction, resultText: string): Range {
+  const { fragment, isBlock } = buildFragmentForAction(action, resultText);
   const lastNode = fragment.lastChild;
-  range.insertNode(fragment);
+
+  // A table must land as a sibling of the current paragraph, not literally at
+  // the cursor — otherwise it nests inside (and inherits from) whatever
+  // inline formatting (color/font spans) happens to surround the cursor.
+  const block = isBlock ? findBlockAncestor(range.startContainer, root) : null;
+  if (block?.parentNode) {
+    range.deleteContents();
+    block.parentNode.insertBefore(fragment, block.nextSibling);
+  } else {
+    range.deleteContents();
+    range.insertNode(fragment);
+  }
 
   const collapsed = document.createRange();
   if (lastNode) {

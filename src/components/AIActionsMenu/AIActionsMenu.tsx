@@ -59,7 +59,7 @@ export function AIActionsMenu({ editableRef }: AIActionsMenuProps) {
         setStatus({ kind: 'error', message: 'The model returned an empty result. Try again.' });
         return;
       }
-      const collapsedRange = insertAIResult(range, action, resultText);
+      const collapsedRange = insertAIResult(range, editor, action, resultText);
       editor.normalize();
       const sel = window.getSelection();
       if (sel) {
