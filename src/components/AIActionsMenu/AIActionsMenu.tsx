@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { InitProgressReport } from '@mlc-ai/web-llm';
 import {
+  AI_ACTION_GROUPS,
   AI_ACTION_LABELS,
   describeAIError,
   isWebGPUSupported,
@@ -10,16 +11,6 @@ import {
 } from '../../lib/aiEngine';
 import { insertAIResult } from '../../lib/aiResultInsert';
 import styles from './AIActionsMenu.module.css';
-
-const ACTIONS: AIAction[] = [
-  'proofread',
-  'rewrite',
-  'professional',
-  'friendly',
-  'concise',
-  'informative',
-  'list',
-];
 
 interface AIActionsMenuProps {
   editableRef: React.RefObject<HTMLDivElement | null>;
@@ -106,19 +97,24 @@ export function AIActionsMenu({ editableRef }: AIActionsMenuProps) {
 
       {open && !busy && (
         <div className={styles.menu}>
-          {ACTIONS.map((action) => (
-            <button
-              key={action}
-              type="button"
-              className={styles.menuItem}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                setOpen(false);
-                void runAction(action);
-              }}
-            >
-              {AI_ACTION_LABELS[action]}
-            </button>
+          {AI_ACTION_GROUPS.map((group) => (
+            <div key={group.label}>
+              <p className={styles.groupLabel}>{group.label}</p>
+              {group.actions.map((action) => (
+                <button
+                  key={action}
+                  type="button"
+                  className={styles.menuItem}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    setOpen(false);
+                    void runAction(action);
+                  }}
+                >
+                  {AI_ACTION_LABELS[action]}
+                </button>
+              ))}
+            </div>
           ))}
           <p className={styles.hint}>Select text first, or leave nothing selected to act on the whole document.</p>
         </div>

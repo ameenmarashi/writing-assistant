@@ -8,19 +8,49 @@ export const MODEL_ID = 'Llama-3.2-1B-Instruct-q4f16_1-MLC';
 export type AIAction =
   | 'proofread'
   | 'rewrite'
+  | 'simplify'
   | 'professional'
   | 'friendly'
+  | 'confident'
+  | 'diplomatic'
+  | 'direct'
+  | 'assertive'
+  | 'empathetic'
   | 'concise'
   | 'informative'
+  | 'summarize'
   | 'list';
+
+export interface AIActionGroup {
+  label: string;
+  actions: AIAction[];
+}
+
+/** Grouped for the menu UI; mirrors Grammarly's Correctness / Tone / Length / Reformat groupings. */
+export const AI_ACTION_GROUPS: AIActionGroup[] = [
+  { label: 'Fix & rewrite', actions: ['proofread', 'rewrite', 'simplify'] },
+  {
+    label: 'Change tone',
+    actions: ['professional', 'friendly', 'confident', 'diplomatic', 'direct', 'assertive', 'empathetic'],
+  },
+  { label: 'Adjust length', actions: ['concise', 'informative'] },
+  { label: 'Reformat', actions: ['summarize', 'list'] },
+];
 
 export const AI_ACTION_LABELS: Record<AIAction, string> = {
   proofread: 'Proofread',
   rewrite: 'Rewrite',
+  simplify: 'Simplify',
   professional: 'Make professional',
   friendly: 'Make friendly',
-  concise: 'Make concise',
-  informative: 'Make more informative',
+  confident: 'Make confident',
+  diplomatic: 'Make diplomatic',
+  direct: 'Make direct',
+  assertive: 'Make assertive',
+  empathetic: 'Make empathetic',
+  concise: 'Shorten',
+  informative: 'Lengthen / add detail',
+  summarize: 'Summarize',
   list: 'Turn into a list',
 };
 
@@ -32,18 +62,43 @@ const ACTION_PROMPTS: Record<AIAction, string> = {
   rewrite:
     'Rewrite the following text to improve clarity and flow while keeping the same meaning. ' +
     'Return only the rewritten text, with no explanation, preamble, or quotation marks.',
+  simplify:
+    'Rewrite the following text using simpler words and shorter sentences so it is easier to ' +
+    'understand, while keeping the same meaning. Return only the rewritten text, with no ' +
+    'explanation, preamble, or quotation marks.',
   professional:
     'Rewrite the following text in a more professional, formal tone. Return only the rewritten ' +
     'text, with no explanation, preamble, or quotation marks.',
   friendly:
     'Rewrite the following text in a warmer, more friendly and casual tone. Return only the ' +
     'rewritten text, with no explanation, preamble, or quotation marks.',
+  confident:
+    'Rewrite the following text in a more confident, self-assured tone, removing hedging language. ' +
+    'Return only the rewritten text, with no explanation, preamble, or quotation marks.',
+  diplomatic:
+    'Rewrite the following text in a more diplomatic, tactful tone that softens any harsh or blunt ' +
+    'language. Return only the rewritten text, with no explanation, preamble, or quotation marks.',
+  direct:
+    'Rewrite the following text in a more direct, straightforward tone that gets to the point ' +
+    'quickly, cutting unnecessary lead-in. Return only the rewritten text, with no explanation, ' +
+    'preamble, or quotation marks.',
+  assertive:
+    'Rewrite the following text in a more assertive tone that states the point clearly and firmly ' +
+    'without being aggressive. Return only the rewritten text, with no explanation, preamble, or ' +
+    'quotation marks.',
+  empathetic:
+    'Rewrite the following text in a more empathetic tone that acknowledges the reader\'s ' +
+    'feelings or perspective. Return only the rewritten text, with no explanation, preamble, or ' +
+    'quotation marks.',
   concise:
     'Rewrite the following text to be more concise, removing unnecessary words while keeping ' +
     'the meaning. Return only the rewritten text, with no explanation, preamble, or quotation marks.',
   informative:
     'Rewrite the following text to be more informative, adding useful clarifying detail where ' +
     'helpful. Return only the rewritten text, with no explanation, preamble, or quotation marks.',
+  summarize:
+    'Summarize the following text in a short paragraph, capturing only the most important points. ' +
+    'Return only the summary, with no explanation, preamble, or quotation marks.',
   list:
     'Convert the following text into a list of its key points. Return only the list items, one ' +
     'per line, each starting with "- ", with no explanation, preamble, or other text.',

@@ -24,12 +24,27 @@
   top: calc(100% + 4px);
   left: 0;
   z-index: 20;
-  min-width: 200px;
+  min-width: 220px;
+  max-height: 70vh;
+  overflow-y: auto;
   background: #ffffff;
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   padding: 4px;
+}
+
+.groupLabel {
+  margin: 8px 10px 2px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #999;
+}
+
+.groupLabel:first-child {
+  margin-top: 4px;
 }
 
 .menuItem {
