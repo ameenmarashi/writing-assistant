@@ -9,10 +9,19 @@ import {
   type AIRunStatus,
 } from '../../lib/aiEngine';
 import { insertAIResult } from '../../lib/aiResultInsert';
+import { Spinner } from '../Spinner/Spinner';
 import styles from './AIActionsMenu.module.css';
 
 interface AIActionsMenuProps {
   editableRef: React.RefObject<HTMLDivElement | null>;
+}
+
+function unwrapElement(el: Element): void {
+  const parent = el.parentNode;
+  if (!parent) return;
+  while (el.firstChild) parent.insertBefore(el.firstChild, el);
+  parent.removeChild(el);
+  parent.normalize();
 }
 
 export function AIActionsMenu({ editableRef }: AIActionsMenuProps) {
@@ -20,6 +29,14 @@ export function AIActionsMenu({ editableRef }: AIActionsMenuProps) {
   const [status, setStatus] = useState<AIRunStatus>({ kind: 'idle' });
   const containerRef = useRef<HTMLDivElement>(null);
   const lastSelectionRef = useRef<Range | null>(null);
+  // The locked-in target for this menu session: captured the instant the
+  // menu opens, and from then on completely independent of the browser's
+  // live Selection (which some browsers clear once focus moves to a
+  // toolbar button, regardless of preventDefault). A visible highlight span
+  // marks exactly what will be acted on, so there's no ambiguity even
+  // though the native blue selection highlight disappears.
+  const targetRangeRef = useRef<Range | null>(null);
+  const targetMarkRef = useRef<HTMLElement | null>(null);
   const configured = isAIConfigured();
 
   useEffect(() => {
@@ -27,18 +44,18 @@ export function AIActionsMenu({ editableRef }: AIActionsMenuProps) {
     const onOutsideMouseDown = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
+        clearTarget();
       }
     };
     window.addEventListener('mousedown', onOutsideMouseDown);
     return () => window.removeEventListener('mousedown', onOutsideMouseDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   useEffect(() => {
-    // Safari can clear the live Selection when focus moves to a toolbar
-    // button, even with preventDefault on mousedown (unlike Chrome, where
-    // that alone keeps the selection intact). Tracking the last non-empty
-    // selection made inside the editor gives runAction something reliable
-    // to fall back on regardless of browser quirks.
+    // Continuously track the last non-empty selection made inside the
+    // editor, so there's something to fall back on if the live selection
+    // is already gone by the time the toggle button's mousedown fires.
     const onSelectionChange = () => {
       const editor = editableRef.current;
       const sel = window.getSelection();
@@ -50,10 +67,15 @@ export function AIActionsMenu({ editableRef }: AIActionsMenuProps) {
     return () => document.removeEventListener('selectionchange', onSelectionChange);
   }, [editableRef]);
 
-  const runAction = async (action: AIAction) => {
-    const editor = editableRef.current;
-    if (!editor) return;
+  function clearTarget(): void {
+    if (targetMarkRef.current) {
+      unwrapElement(targetMarkRef.current);
+      targetMarkRef.current = null;
+    }
+    targetRangeRef.current = null;
+  }
 
+  function captureTarget(editor: HTMLDivElement): void {
     const selection = window.getSelection();
     let range: Range;
     if (selection && !selection.isCollapsed && editor.contains(selection.anchorNode)) {
@@ -61,13 +83,38 @@ export function AIActionsMenu({ editableRef }: AIActionsMenuProps) {
     } else if (lastSelectionRef.current && editor.contains(lastSelectionRef.current.startContainer)) {
       range = lastSelectionRef.current.cloneRange();
     } else {
-      // No selection: act on the whole document.
       range = document.createRange();
       range.selectNodeContents(editor);
     }
-    lastSelectionRef.current = null;
+
+    if (!range.collapsed) {
+      try {
+        const mark = document.createElement('span');
+        mark.className = styles.aiTarget;
+        range.surroundContents(mark);
+        targetMarkRef.current = mark;
+        const lockedRange = document.createRange();
+        lockedRange.selectNodeContents(mark);
+        targetRangeRef.current = lockedRange;
+        return;
+      } catch {
+        // Range crosses element boundaries surroundContents can't handle —
+        // fall back to acting on it without a visual lock.
+      }
+    }
+    targetRangeRef.current = range;
+  }
+
+  const runAction = async (action: AIAction) => {
+    const editor = editableRef.current;
+    const range = targetRangeRef.current;
+    if (!editor || !range) return;
+
     const sourceText = range.toString();
-    if (!sourceText.trim()) return;
+    if (!sourceText.trim()) {
+      clearTarget();
+      return;
+    }
 
     setStatus({ kind: 'busy', text: 'Thinking…' });
 
@@ -78,6 +125,11 @@ export function AIActionsMenu({ editableRef }: AIActionsMenuProps) {
         return;
       }
       const collapsedRange = insertAIResult(range, editor, action, resultText);
+      if (targetMarkRef.current) {
+        unwrapElement(targetMarkRef.current);
+        targetMarkRef.current = null;
+      }
+      targetRangeRef.current = null;
       editor.normalize();
       const sel = window.getSelection();
       if (sel) {
@@ -87,6 +139,7 @@ export function AIActionsMenu({ editableRef }: AIActionsMenuProps) {
       editor.focus();
       setStatus({ kind: 'idle' });
     } catch (err) {
+      clearTarget();
       setStatus({ kind: 'error', message: describeAIError(err) });
     }
   };
@@ -97,15 +150,23 @@ export function AIActionsMenu({ editableRef }: AIActionsMenuProps) {
     <div className={styles.container} ref={containerRef}>
       <button
         type="button"
-        className={styles.toggle}
+        className={`${styles.toggle} ${busy ? styles.toggleBusy : ''}`}
         disabled={!configured || busy}
         title={configured ? 'AI writing actions' : 'AI features are not configured (missing VITE_AI_PROXY_URL)'}
         onMouseDown={(e) => {
           e.preventDefault();
           setStatus({ kind: 'idle' });
-          setOpen((v) => !v);
+          if (open) {
+            clearTarget();
+            setOpen(false);
+            return;
+          }
+          const editor = editableRef.current;
+          if (editor) captureTarget(editor);
+          setOpen(true);
         }}
       >
+        {busy && <Spinner />}
         ✨ AI Actions
       </button>
 
@@ -136,7 +197,8 @@ export function AIActionsMenu({ editableRef }: AIActionsMenuProps) {
 
       {busy && (
         <div className={styles.status}>
-          <div>{status.text}</div>
+          <Spinner />
+          {status.text}
         </div>
       )}
 

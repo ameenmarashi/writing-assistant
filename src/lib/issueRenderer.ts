@@ -120,11 +120,29 @@ export function recomputeAndRenderIssues(
   return visibleIssues;
 }
 
-/** Replaces a live issue span's text with its suggested fix and unwraps the mark. */
-export function applyFix(root: HTMLElement, issueId: string, suggestion: string): void {
-  const mark = root.querySelector(`[${ISSUE_ATTR}="${issueId}"]`);
-  if (!mark) return;
-  mark.textContent = suggestion;
-  unwrapMark(mark);
+/**
+ * Replaces a live issue span's text with its suggested fix and unwraps the
+ * mark. If no span exists for this issue (its range overlapped another
+ * issue's during rendering, so `surroundContents` never ran for it — a known
+ * limitation of the wrap-based mark pipeline), falls back to locating
+ * `matchedText` directly in the document and replacing that instead of
+ * silently doing nothing.
+ */
+export function applyFix(root: HTMLElement, issue: Issue): void {
+  const mark = root.querySelector(`[${ISSUE_ATTR}="${issue.id}"]`);
+  if (mark) {
+    mark.textContent = issue.suggestion ?? '';
+    unwrapMark(mark);
+    root.normalize();
+    return;
+  }
+
+  const map = getPlainTextAndMap(root);
+  const start = map.text.indexOf(issue.matchedText);
+  if (start === -1) return;
+  const range = offsetsToRange(map, start, start + issue.matchedText.length);
+  if (!range) return;
+  range.deleteContents();
+  range.insertNode(document.createTextNode(issue.suggestion ?? ''));
   root.normalize();
 }

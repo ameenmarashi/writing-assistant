@@ -19,6 +19,29 @@
   cursor: not-allowed;
 }
 
+.toggleBusy {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Marks the exact text an AI action will act on, inserted imperatively into
+   the editor's DOM (independent of the native selection highlight, which
+   some browsers clear once focus moves to this toolbar). */
+.aiTarget {
+  background: rgba(124, 77, 255, 0.22);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(124, 77, 255, 0.35);
+}
+
 .menu {
   position: absolute;
   top: calc(100% + 4px);

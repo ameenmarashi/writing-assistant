@@ -1,5 +1,6 @@
 import type { AIRunStatus } from '../../lib/aiEngine';
 import type { Issue } from '../../types';
+import { Spinner } from '../Spinner/Spinner';
 import styles from './SuggestionsPanel.module.css';
 
 interface SuggestionsPanelProps {
@@ -33,7 +34,7 @@ export function SuggestionsPanel({
     <div className={styles.panel}>
       <button
         type="button"
-        className={styles.aiCheckButton}
+        className={`${styles.aiCheckButton} ${busy ? styles.aiCheckButtonBusy : ''}`}
         disabled={!aiCheckAvailable || busy}
         title={
           aiCheckAvailable
@@ -42,11 +43,13 @@ export function SuggestionsPanel({
         }
         onClick={onRunAICheck}
       >
+        {busy && <Spinner />}
         ✨ Check writing with AI
       </button>
       {busy && (
         <div className={styles.aiCheckStatus}>
-          <div>{aiCheckStatus.text}</div>
+          <Spinner />
+          {aiCheckStatus.text}
         </div>
       )}
       {aiCheckStatus.kind === 'error' && (

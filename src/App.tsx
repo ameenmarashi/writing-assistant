@@ -65,7 +65,7 @@ function App() {
   const handleApply = (issue: Issue) => {
     const el = ref.current;
     if (!el) return;
-    applyFix(el, issue.id, issue.suggestion ?? '');
+    applyFix(el, issue);
     save(el.innerHTML);
     runGrammarCheck();
   };
