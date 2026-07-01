@@ -1,0 +1,29 @@
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: linear-gradient(90deg, #f1e9fb, #e8f0fe);
+  color: #3d2f5c;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  border-bottom: 1px solid #e0d5f5;
+}
+
+.text {
+  flex: 1;
+}
+
+.dismiss {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  color: #3d2f5c;
+  padding: 2px 6px;
+}
+
+.dismiss:hover {
+  opacity: 0.7;
+}
