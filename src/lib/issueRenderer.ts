@@ -46,18 +46,34 @@ function unwrapAllMarks(root: HTMLElement): void {
   root.normalize();
 }
 
-function captureCaretOffset(root: HTMLElement): number | null {
+interface SelectionOffsets {
+  start: number;
+  end: number;
+}
+
+/**
+ * Captures the FULL selection (start and end), not just the caret position.
+ * A version that only tracked the start offset would silently collapse any
+ * active multi-character selection to a single point every time this ran —
+ * which happens on a debounced timer after every edit, so it could destroy
+ * a selection the user was about to act on (e.g. with an AI Action) at any
+ * moment, unrelated to whatever they were about to click.
+ */
+function captureSelectionOffsets(root: HTMLElement): SelectionOffsets | null {
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0) return null;
   const range = selection.getRangeAt(0);
-  if (!root.contains(range.startContainer)) return null;
+  if (!root.contains(range.startContainer) || !root.contains(range.endContainer)) return null;
   const map = getPlainTextAndMap(root);
-  return nodeOffsetToPlainTextOffset(map, range.startContainer, range.startOffset);
+  const start = nodeOffsetToPlainTextOffset(map, range.startContainer, range.startOffset);
+  const end = nodeOffsetToPlainTextOffset(map, range.endContainer, range.endOffset);
+  if (start === null || end === null) return null;
+  return { start, end };
 }
 
-function restoreCaretOffset(root: HTMLElement, offset: number): void {
+function restoreSelectionOffsets(root: HTMLElement, offsets: SelectionOffsets): void {
   const map = getPlainTextAndMap(root);
-  const range = offsetsToRange(map, offset, offset);
+  const range = offsetsToRange(map, offsets.start, offsets.end);
   if (!range) return;
   const selection = window.getSelection();
   if (!selection) return;
@@ -79,7 +95,7 @@ export function recomputeAndRenderIssues(
   aiSuggestions: AISuggestion[] = [],
 ): Issue[] {
   const hadFocus = root.contains(document.activeElement) || document.activeElement === root;
-  const caretOffset = hadFocus ? captureCaretOffset(root) : null;
+  const savedSelection = hadFocus ? captureSelectionOffsets(root) : null;
 
   unwrapAllMarks(root);
 
@@ -113,8 +129,8 @@ export function recomputeAndRenderIssues(
     }
   }
 
-  if (hadFocus && caretOffset !== null) {
-    restoreCaretOffset(root, caretOffset);
+  if (hadFocus && savedSelection) {
+    restoreSelectionOffsets(root, savedSelection);
   }
 
   return visibleIssues;
